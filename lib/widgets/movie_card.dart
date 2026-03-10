@@ -10,14 +10,17 @@ class MovieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
       child: ListTile(
-        onTap: onTap,
-        leading: movie.posterPath.isNotEmpty
-            ? Image.network('https://image.tmdb.org/t/p/w200${movie.posterPath}')
-            : const SizedBox(width: 50, child: Placeholder()),
+        leading: Image.network(
+          movie.poster,
+          width: 50,
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.broken_image),
+        ),
         title: Text(movie.title),
-        subtitle: Text('Release: ${movie.releaseDate}'),
+        subtitle: Text(movie.year),
+        onTap: onTap,
       ),
     );
   }

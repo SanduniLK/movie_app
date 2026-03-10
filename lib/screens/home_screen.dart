@@ -14,16 +14,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String searchQuery = '';
+  final TextEditingController _controller = TextEditingController();
 
   @override
-  @override
-void initState() {
-  super.initState();
-  // Run after the first frame to avoid setState during build
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    Provider.of<MovieProvider>(context, listen: false).fetchMovies();
-  });
-}
+  void initState() {
+    super.initState();
+    // fetch movies after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<MovieProvider>(context, listen: false).fetchMovies();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +31,25 @@ void initState() {
     List<Movie> displayMovies = provider.searchMovies(searchQuery);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Popular Movies'),
-      ),
+      appBar: AppBar(title: const Text('Popular Movies')),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
-              decoration: const InputDecoration(
+              controller: _controller,
+              decoration: InputDecoration(
                 labelText: 'Search Movies',
-                border: OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    setState(() {
+                      searchQuery = _controller.text;
+                      provider.fetchMovies(query: searchQuery);
+                    });
+                  },
+                ),
+                border: const OutlineInputBorder(),
               ),
               onChanged: (value) {
                 setState(() {

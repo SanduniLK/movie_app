@@ -3,7 +3,7 @@ import 'package:movie_app/screens/detail_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/movie_provider.dart';
 import '../widgets/movie_card.dart';
-import '../widgets/search_bar.dart'; // import SearchBar widget
+import '../widgets/search_bar.dart'; 
 
 import '../models/movie.dart';
 

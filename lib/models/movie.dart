@@ -1,28 +1,43 @@
 class Movie {
-  final int id;
   final String title;
-  final String posterPath;
-  final String overview;
-  final double rating;
-  final String releaseDate;
+  final String year;
+  final String imdbID;
+  final String type;
+  final String poster;
+  final String plot;       // For detailed info
+  final String imdbRating; // For detailed info
 
   Movie({
-    required this.id,
     required this.title,
-    required this.posterPath,
-    required this.overview,
-    required this.rating,
-    required this.releaseDate,
+    required this.year,
+    required this.imdbID,
+    required this.type,
+    required this.poster,
+    this.plot = '',
+    this.imdbRating = '',
   });
 
+  // From search API
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
-      id: json['id'],
-      title: json['title'] ?? 'No Title',
-      posterPath: json['poster_path'] ?? '',
-      overview: json['overview'] ?? 'No Overview',
-      rating: (json['vote_average'] as num).toDouble(),
-      releaseDate: json['release_date'] ?? '',
+      title: json['Title'] ?? '',
+      year: json['Year'] ?? '',
+      imdbID: json['imdbID'] ?? '',
+      type: json['Type'] ?? '',
+      poster: json['Poster'] ?? '',
+    );
+  }
+
+  // From detail API
+  factory Movie.fromDetailJson(Map<String, dynamic> json) {
+    return Movie(
+      title: json['Title'] ?? '',
+      year: json['Year'] ?? '',
+      imdbID: json['imdbID'] ?? '',
+      type: json['Type'] ?? '',
+      poster: json['Poster'] ?? '',
+      plot: json['Plot'] ?? '',
+      imdbRating: json['imdbRating'] ?? '',
     );
   }
 }

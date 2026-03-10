@@ -12,13 +12,13 @@ class MovieProvider extends ChangeNotifier {
   String _error = '';
   String get error => _error;
 
-  Future<void> fetchMovies() async {
+  Future<void> fetchMovies({String query = "batman"}) async {
     _isLoading = true;
     _error = '';
     notifyListeners();
 
     try {
-      _movies = await ApiService.fetchPopularMovies();
+      _movies = await ApiService.fetchMovies(query: query);
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -29,6 +29,8 @@ class MovieProvider extends ChangeNotifier {
 
   List<Movie> searchMovies(String query) {
     if (query.isEmpty) return _movies;
-    return _movies.where((movie) => movie.title.toLowerCase().contains(query.toLowerCase())).toList();
+    return _movies
+        .where((movie) => movie.title.toLowerCase().contains(query.toLowerCase()))
+        .toList();
   }
 }

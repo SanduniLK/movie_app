@@ -3,24 +3,40 @@ import 'package:http/http.dart' as http;
 import '../models/movie.dart';
 
 class ApiService {
-  static const String apiKey = 'YOUR_TMDB_API_KEY';
-  static const String baseUrl = 'https://api.themoviedb.org/3';
+  static const String apiKey = "f7781c16";
 
-  static Future<List<Movie>> fetchPopularMovies() async {
-    final url = Uri.parse('$baseUrl/movie/popular?api_key=$apiKey&language=en-US&page=1');
+  // Fetch popular/search movies
+  static Future<List<Movie>> fetchMovies({String query = "batman"}) async {
+    final url = Uri.parse("https://www.omdbapi.com/?s=$query&apikey=$apiKey");
+    final response = await http.get(url);
 
-    try {
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List movies = data['results'];
-        return movies.map((json) => Movie.fromJson(json)).toList();
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['Response'] == "True") {
+        List movies = data['Search'];
+        return movies.map((m) => Movie.fromJson(m)).toList();
       } else {
-        throw Exception('Failed to load movies');
+        return []; // No results
       }
-    } catch (e) {
-      throw Exception('No Internet Connection or API error');
+    } else {
+      throw Exception("Failed to load movies");
+    }
+  }
+
+  // Fetch detailed movie info
+  static Future<Movie> fetchMovieDetail(String imdbID) async {
+    final url = Uri.parse("https://www.omdbapi.com/?i=$imdbID&apikey=$apiKey");
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['Response'] == "True") {
+        return Movie.fromDetailJson(data);
+      } else {
+        throw Exception("Movie not found");
+      }
+    } else {
+      throw Exception("Failed to load movie details");
     }
   }
 }

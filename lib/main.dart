@@ -4,26 +4,22 @@ import 'providers/movie_provider.dart';
 import 'screens/home_screen.dart';
 
 void main() {
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => MovieProvider()),
-      ],
-      child: const MovieApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
-class MovieApp extends StatelessWidget {
-  const MovieApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Movie Discovery App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const HomeScreen(),
+    return ChangeNotifierProvider(
+      create: (_) => MovieProvider(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Movie App',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: const HomeScreen(),
+      ),
     );
   }
 }
