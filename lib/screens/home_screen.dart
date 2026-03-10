@@ -1,89 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/movie_provider.dart';
+import '../widgets/search_bar.dart';
 import '../widgets/movie_card.dart';
-import 'detail_screen.dart';
-import '../models/movie.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String searchQuery = '';
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    // fetch movies after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<MovieProvider>(context, listen: false).fetchMovies();
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<MovieProvider>(context);
-    List<Movie> displayMovies = provider.searchMovies(searchQuery);
+    final movieProvider = Provider.of<MovieProvider>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Popular Movies')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText: 'Search Movies',
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    setState(() {
-                      searchQuery = _controller.text;
-                      provider.fetchMovies(query: searchQuery);
-                    });
-                  },
-                ),
-                border: const OutlineInputBorder(),
+      appBar: AppBar(title: const Text("Movie App")),
+      body: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          children: [
+            const SearchBar(),
+            const SizedBox(height: 12),
+            if (movieProvider.isLoading)
+              const CircularProgressIndicator(),
+            if (movieProvider.error.isNotEmpty)
+              Text(movieProvider.error),
+            if (!movieProvider.isLoading && movieProvider.movies.isEmpty)
+              const Text("No movies found"),
+            Expanded(
+              child: ListView.builder(
+                itemCount: movieProvider.movies.length,
+                itemBuilder: (context, index) {
+                  final movie = movieProvider.movies[index];
+                  return MovieCard(movie: movie);
+                },
               ),
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-              },
             ),
-          ),
-          Expanded(
-            child: provider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : provider.error.isNotEmpty
-                    ? Center(child: Text(provider.error))
-                    : displayMovies.isEmpty
-                        ? const Center(child: Text('No Results Found'))
-                        : ListView.builder(
-                            itemCount: displayMovies.length,
-                            itemBuilder: (context, index) {
-                              final movie = displayMovies[index];
-                              return MovieCard(
-                                movie: movie,
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => DetailScreen(movie: movie),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
