@@ -1,77 +1,134 @@
-Movie Discovery App
+# 🎬 Movie Discovery App
 
-A Flutter application that allows users to browse popular movies, search for movies by title, and view detailed movie information. This project demonstrates API integration, state management, and a responsive UI design.
+A **Flutter movie browsing application** that allows users to explore popular movies, search by title, and view detailed movie information.
 
-State Management
+This project demonstrates **API integration, Provider state management, and responsive UI design**.
 
-This app uses Provider as the state management solution.
+---
 
-MovieProvider manages the list of movies, search results, filters (rating, year), and loading/error states.
+## 🚀 Features
 
-Provider ensures that UI widgets rebuild automatically when movie data or filters change, keeping the UI reactive and consistent.
+✨ **Popular Movies**
+Browse a curated list of popular movies on the home screen.
 
-Features
+🔎 **Search Movies**
+Search movies easily by entering a movie title.
 
-Home Screen: Displays a curated list of popular movies.
+🎥 **Movie Details**
+Tap a movie card to view full details including poster, description, and IMDb rating.
 
-Search Functionality: Users can search movies by title.
+🎛 **Filters**
+Filter movies by:
 
-Movie Details: Tap a movie to view full poster, description, and IMDb rating.
+* ⭐ Rating
+* 📅 Release Year
 
-Filters: Filter movies by year or rating.
+🕘 **Recent Searches**
+Displays the last **5 searches** for quick access.
 
-Recent Searches: Shows a list of recent search queries for convenience.
+⚠ **Error Handling**
+Handles situations such as:
 
-Error Handling: Handles empty responses, no results found, and loading/error states.
+* No results found
+* API errors
+* Loading states
 
-Getting Started
-Prerequisites
+---
 
-Flutter SDK installed (Flutter installation guide
-)Installation
+## 🧠 State Management
 
-Clone this repository:
+This application uses **Provider** for state management.
 
-git clone https://github.com/yourusername/movie-discovery-app.git
-cd movie-discovery-app
+**MovieProvider** manages:
+
+* Movie list
+* Search results
+* Filters (rating & year)
+* Loading and error states
+
+Provider automatically **rebuilds UI widgets when data changes**, ensuring a reactive and consistent interface.
+
+---
+
+## 🛠 Getting Started
+
+### Prerequisites
+
+* Flutter SDK installed
+* Android Studio / VS Code
+* Internet connection
+
+---
+
+### 📥 Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/SanduniLK/movie_app
+cd movie_app
+```
 
 Install dependencies:
 
+```bash
 flutter pub get
+```
 
-Run the app:
+Run the application:
 
+```bash
 flutter run
+```
 
-The app can be run on an emulator or a physical device.
+You can run the app on **an emulator or a physical device**.
 
-Optional / Bonus Features
+---
 
-Dark & Light Theme Toggle: Switch between dark and light mode.
+## 🌟 Bonus Features
 
-Recent Searches: Stores last 5 searches for quick access.
+🌙 **Dark / Light Theme Toggle**
+Switch between dark and light mode.
 
-Smooth Animations: Fade and slide animations on home screen content.
+🎞 **Smooth Animations**
+Fade and slide animations on home screen content.
 
-Filter Chips: Active filters are displayed with removable chips.
+🏷 **Filter Chips**
+Active filters appear as removable chips.
 
-Responsive Layout: Works well on both mobile and tablet screen sizes.
+📱 **Responsive Layout**
+Optimized for both **mobile and tablet screens**.
 
-Future Improvements:
+---
 
-Add connectivity check for offline handling.
+## 🔮 Future Improvements
 
-Add pagination for popular movies and search results.
 
-Integrate favorites or watchlist functionality.
+* Implement **pagination for movie lists**
+* Add **Favorites / Watchlist**
+* Improve **UI polish and animations**
 
-Improve UI design and animations for a more polished look.
+---
 
-API Used
+## 🌐 API Used
 
-OMDb API
- (API Key required)
+**OMDb API**
+An online movie database API used to fetch movie data.
 
-An IDE such as VS Code or Android Studio
+API Key required.
 
-Internet connection to fetch movie data from the OMDb API
+---
+
+## 💻 Built With
+
+* Flutter
+* Dart
+* Provider
+* OMDb API - follow-> https://www.omdbapi.com/apikey.aspx
+
+---
+
+## 👩‍💻 Author
+
+Developed by **Reshika Sanduni**
+Bachelor of Information Technology – University of Moratuwa
