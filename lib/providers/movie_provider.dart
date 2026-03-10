@@ -13,12 +13,17 @@ class MovieProvider extends ChangeNotifier {
   String get error => _error;
 
   Future<void> fetchMovies(String query) async {
+    if (query.isEmpty) return;
+
     _isLoading = true;
     _error = '';
     notifyListeners();
 
     try {
       _movies = await ApiService.fetchMovies(query);
+      if (_movies.isEmpty) {
+        _error = 'No movies found';
+      }
     } catch (e) {
       _error = e.toString();
     } finally {

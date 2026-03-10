@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/movie_provider.dart';
 import 'screens/home_screen.dart';
+import 'providers/movie_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => MovieProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -12,16 +17,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => MovieProvider(),
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Movie App',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: const HomeScreen(),
-      ),
+    return MaterialApp(
+      title: 'Movie App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: HomeScreen(),
     );
   }
 }
