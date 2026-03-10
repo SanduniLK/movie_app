@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'providers/movie_provider.dart';
 
 void main() {
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => MovieProvider(),
@@ -13,11 +14,13 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
+ 
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Movie App',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: HomeScreen(),
