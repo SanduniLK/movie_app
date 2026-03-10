@@ -50,7 +50,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     _animationController.forward();
     
-    // Load popular movies on startup with connectivity check
+    // Load popular movies on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndLoadMovies();
     });
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await connectivityProvider.checkConnectivity();
     
     if (connectivityProvider.isConnected) {
-      movieProvider.fetchPopularMovies();
+      await movieProvider.fetchPopularMovies();
     }
   }
 
@@ -209,7 +209,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await connectivityProvider.checkConnectivity();
     
     if (connectivityProvider.isConnected) {
-      movieProvider.fetchPopularMovies();
+      // Clear old movies first
+      movieProvider.clearMovies();
+      
+      // Fetch popular movies
+      await movieProvider.fetchPopularMovies();
+    } else {
+      _showNoInternetSnackBar();
     }
   }
 
@@ -222,15 +228,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final movieProvider = Provider.of<MovieProvider>(context);
-    final connectivityProvider = Provider.of<ConnectivityProvider>(context);
-    final screenSize = MediaQuery.of(context).size;
+    return Consumer2<MovieProvider, ConnectivityProvider>(
+      builder: (context, movieProvider, connectivityProvider, _) {
+        // If no internet, show NoInternetWidget
+        if (!connectivityProvider.isConnected) {
+          return Scaffold(
+            backgroundColor: _backgroundColor,
+            body: NoInternetWidget(
+              onRetry: _retryConnection,
+            ),
+          );
+        }
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: _backgroundColor,
-        body: SafeArea(
-          child: CustomScrollView(
+        // If loading, show loading indicator
+        if (movieProvider.isLoading) {
+          return Scaffold(
+            backgroundColor: _backgroundColor,
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: AppColors.primaryRed,
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Loading movies...",
+                    style: TextStyle(color: _secondaryTextColor),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Normal UI with movies or empty state
+        return Scaffold(
+          backgroundColor: _backgroundColor,
+          body: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
               // App Bar with Sidebar Button
@@ -253,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: Icon(
                         Icons.menu,
-                        color: Colors.white60,
+                        color: _textColor,
                         size: 24,
                       ),
                     ),
@@ -261,26 +296,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 ),
                 actions: [
-                  // Internet connection indicator
+                  // Theme toggle
                   Padding(
                     padding: const EdgeInsets.only(right: 8.0),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: connectivityProvider.isConnected
-                            ? Colors.green.withValues(alpha: 0.2)
-                            : Colors.red.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
+                    child: IconButton(
+                      icon: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: _accentColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                          color: _accentColor,
+                          size: 24,
+                        ),
                       ),
-                      child: Icon(
-                        connectivityProvider.isConnected
-                            ? Icons.wifi
-                            : Icons.wifi_off,
-                        color: connectivityProvider.isConnected
-                            ? Colors.green
-                            : Colors.red,
-                        size: 20,
-                      ),
+                      onPressed: () => _toggleTheme(!_isDarkMode),
                     ),
                   ),
                 ],
@@ -299,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           style: TextStyle(
                             color: _textColor,
                             fontWeight: FontWeight.bold,
-                            fontSize: screenSize.width * 0.06, 
+                            fontSize: MediaQuery.of(context).size.width * 0.06, 
                             letterSpacing: 2,
                             shadows: [
                               Shadow(
@@ -315,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           textAlign: TextAlign.center, 
                           style: TextStyle(
                             color: _secondaryTextColor,
-                            fontSize: screenSize.width * 0.025, 
+                            fontSize: MediaQuery.of(context).size.width * 0.025, 
                             letterSpacing: 1,
                           ),
                         ),
@@ -371,13 +403,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               width: double.infinity,
                               height: 55,
                               child: ElevatedButton(
-                                onPressed: connectivityProvider.isConnected 
-                                    ? _searchMovies 
-                                    : _showNoInternetSnackBar,
+                                onPressed: _searchMovies,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: connectivityProvider.isConnected
-                                      ? _accentColor
-                                      : Colors.grey,
+                                  backgroundColor: _accentColor,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
@@ -437,11 +465,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           FilterChipWidget(
                                             label: 'Year: ${movieProvider.currentYearFilter}',
                                             onDelete: () async {
-                                              if (connectivityProvider.isConnected) {
-                                                await movieProvider.applyFilters(year: 'All');
-                                              } else {
-                                                _showNoInternetSnackBar();
-                                              }
+                                              await movieProvider.applyFilters(year: 'All');
                                             },
                                             accentColor: _accentColor,
                                           ),
@@ -449,11 +473,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                           FilterChipWidget(
                                             label: 'Rating: ${movieProvider.currentRatingFilter}',
                                             onDelete: () async {
-                                              if (connectivityProvider.isConnected) {
-                                                await movieProvider.applyFilters(rating: 'All');
-                                              } else {
-                                                _showNoInternetSnackBar();
-                                              }
+                                              await movieProvider.applyFilters(rating: 'All');
                                             },
                                             accentColor: _accentColor,
                                           ),
@@ -560,108 +580,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
       
-              // Movie Grid or States - Complete with all states
-              if (connectivityProvider.isChecking && !connectivityProvider.initialCheckDone)
-                // Show checking connection state
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(
-                          color: AppColors.primaryRed,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "Checking connection...",
-                          style: TextStyle(color: _secondaryTextColor, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (!connectivityProvider.isConnected && connectivityProvider.initialCheckDone)
-                // Show no internet screen
-                SliverFillRemaining(
-                  child: NoInternetWidget(
-                    onRetry: _retryConnection,
-                  ),
-                )
-              else if (movieProvider.isLoading)
-                // Show loading state
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const CircularProgressIndicator(
-                          color: AppColors.primaryRed,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          movieProvider.currentRatingFilter != 'All'
-                              ? "Filtering by rating..."
-                              : "Searching...",
-                          style: TextStyle(color: _secondaryTextColor, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (movieProvider.error.isNotEmpty)
-                // Show error state
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: _accentColor,
-                          size: 60,
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          "Something went wrong",
-                          style: TextStyle(
-                            color: _textColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          movieProvider.error,
-                          style: TextStyle(
-                            color: _secondaryTextColor,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: connectivityProvider.isConnected
-                              ? () => movieProvider.fetchPopularMovies()
-                              : _retryConnection,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _accentColor,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                          ),
-                          child: const Text("Try Again"),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (movieProvider.movies.isNotEmpty)
-                // Show movie grid
+              // Movie Grid
+              if (movieProvider.movies.isNotEmpty)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: screenSize.width > 600 ? 3 : 2,
+                      crossAxisCount: MediaQuery.of(context).size.width > 600 ? 3 : 2,
                       childAspectRatio: 0.65,
                       crossAxisSpacing: 15,
                       mainAxisSpacing: 15,
@@ -676,7 +601,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   ),
                 )
               else
-                // Show empty state
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -698,9 +622,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          movieProvider.currentRatingFilter != 'All'
-                              ? "No movies with rating ${movieProvider.currentRatingFilter}"
-                              : "Try searching or applying filters",
+                          "Try searching for a movie",
                           style: TextStyle(
                             color: _secondaryTextColor.withValues(alpha: 0.7),
                           ),
@@ -711,8 +633,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MovieProvider()),
-        ChangeNotifierProvider(create: (_) => ConnectivityProvider()), // Add this
+        ChangeNotifierProvider(create: (_) => ConnectivityProvider()), 
       ],
       child: MaterialApp(
         title: 'Movie App',

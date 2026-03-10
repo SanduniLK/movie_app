@@ -4,7 +4,7 @@ import 'package:movie_app/models/MovieDetail.dart';
 import '../models/movie.dart';
 
 class ApiService {
-  static const String apiKey = "f7781c16";
+  static const String apiKey = "6fad775";
   static const String baseUrl = "https://www.omdbapi.com/";
 
   
