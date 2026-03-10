@@ -7,7 +7,7 @@ class ApiService {
   static const String apiKey = "f7781c16";
   static const String baseUrl = "https://www.omdbapi.com/";
 
-  // Fetch movies by search query
+  
   static Future<List<Movie>> fetchMovies(String query) async {
     final url = Uri.parse(
       "$baseUrl?s=${Uri.encodeComponent(query)}&apikey=$apiKey"

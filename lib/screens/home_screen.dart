@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:movie_app/models/MovieDetail.dart';
+import 'package:movie_app/widgets/filter_chip.dart';
+import 'package:movie_app/widgets/movie_card.dart';
+import 'package:movie_app/widgets/search_bar.dart';
 import 'package:movie_app/widgets/sidebar_widget.dart';
+import 'package:movie_app/widgets/no_internet_widget.dart';
 import 'package:provider/provider.dart';
 import '../providers/movie_provider.dart';
+import '../providers/connectivity_provider.dart';
 import '../models/movie.dart';
-import 'detail_screen.dart';
 import '../utils/colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -47,10 +50,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     
     _animationController.forward();
     
-    // Load popular movies on startup
+    // Load popular movies on startup with connectivity check
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final movieProvider = Provider.of<MovieProvider>(context, listen: false);
-      movieProvider.fetchPopularMovies();
+      _checkAndLoadMovies();
     });
   }
 
@@ -60,6 +62,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _searchFocusNode.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAndLoadMovies() async {
+    final connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
+    final movieProvider = Provider.of<MovieProvider>(context, listen: false);
+    
+    await connectivityProvider.checkConnectivity();
+    
+    if (connectivityProvider.isConnected) {
+      movieProvider.fetchPopularMovies();
+    }
   }
 
   void _toggleTheme(bool isDark) {
@@ -96,10 +109,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _handleFilterSelection(String filterType, String value) async {
+    final connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
+    
+    if (!connectivityProvider.isConnected) {
+      _showNoInternetSnackBar();
+      return;
+    }
+    
     final movieProvider = Provider.of<MovieProvider>(context, listen: false);
     
     if (filterType == 'rating') {
-      // Apply rating filter while keeping current year filter
       await movieProvider.applyFilters(rating: value);
     } else if (filterType == 'year') {
       if (value == 'All') {
@@ -114,6 +133,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   void _searchMovies() async {
     final query = _searchController.text.trim();
+    
+    final connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
+    
+    if (!connectivityProvider.isConnected) {
+      _showNoInternetSnackBar();
+      return;
+    }
+    
     if (query.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -143,6 +170,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     await movieProvider.fetchMovies(query);
   }
 
+  void _showNoInternetSnackBar() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: const [
+            Icon(Icons.wifi_off, color: Colors.white),
+            SizedBox(width: 10),
+            Text('No internet connection'),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
   void _clearSearch() {
     setState(() {
       _searchController.clear();
@@ -155,6 +202,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  void _retryConnection() async {
+    final connectivityProvider = Provider.of<ConnectivityProvider>(context, listen: false);
+    final movieProvider = Provider.of<MovieProvider>(context, listen: false);
+    
+    await connectivityProvider.checkConnectivity();
+    
+    if (connectivityProvider.isConnected) {
+      movieProvider.fetchPopularMovies();
+    }
+  }
+
   Color get _backgroundColor => AppColors.getBackgroundColor(_isDarkMode);
   Color get _textColor => AppColors.getTextColor(_isDarkMode);
   Color get _secondaryTextColor => AppColors.getSecondaryTextColor(_isDarkMode);
@@ -165,6 +223,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final movieProvider = Provider.of<MovieProvider>(context);
+    final connectivityProvider = Provider.of<ConnectivityProvider>(context);
     final screenSize = MediaQuery.of(context).size;
 
     return SafeArea(
@@ -175,89 +234,111 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             physics: const BouncingScrollPhysics(),
             slivers: [
               // App Bar with Sidebar Button
-              // Replace your existing SliverAppBar with this fixed version
-SliverAppBar(
-  expandedHeight: 120,
-  collapsedHeight: kToolbarHeight, // Add this line
-  floating: true,
-  pinned: true,
-  snap: true, // Add this line for better snapping
-  backgroundColor: Colors.transparent,
-  elevation: 0,
-  leading: Padding(
-    padding: const EdgeInsets.only(left: 8.0),
-    child: IconButton(
-      icon: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: _accentColor.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          Icons.menu,
-          color: Colors.white60,
-          size: 24,
-        ),
-      ),
-      onPressed: _openSidebar,
-    ),
-  ),
-  
-  flexibleSpace: FlexibleSpaceBar(
-    titlePadding: EdgeInsets.zero, 
-    title: Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min, 
-        children: [
-          Text(
-            "MOVIE HUB",
-            textAlign: TextAlign.center, 
-            style: TextStyle(
-              color: _textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: screenSize.width * 0.06, 
-              letterSpacing: 2,
-              shadows: [
-                Shadow(
-                  color: _accentColor.withValues(alpha: 0.3),
-                  blurRadius: 10,
+              SliverAppBar(
+                expandedHeight: 120,
+                collapsedHeight: kToolbarHeight, 
+                floating: true,
+                pinned: true,
+                snap: true, 
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _accentColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.menu,
+                        color: Colors.white60,
+                        size: 24,
+                      ),
+                    ),
+                    onPressed: _openSidebar,
+                  ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 2), 
-          Text(
-            "Discover • Explore • Enjoy",
-            textAlign: TextAlign.center, 
-            style: TextStyle(
-              color: _secondaryTextColor,
-              fontSize: screenSize.width * 0.025, 
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 8), 
-        ],
-      ),
-    ),
-    centerTitle: true,
-    background: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _accentColor,
-            _backgroundColor,
-          ],
-          stops: const [0.3, 1.0],
-        ),
-      ),
-    ),
-  ),
-),
+                actions: [
+                  // Internet connection indicator
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: connectivityProvider.isConnected
+                            ? Colors.green.withValues(alpha: 0.2)
+                            : Colors.red.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        connectivityProvider.isConnected
+                            ? Icons.wifi
+                            : Icons.wifi_off,
+                        color: connectivityProvider.isConnected
+                            ? Colors.green
+                            : Colors.red,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  titlePadding: EdgeInsets.zero, 
+                  title: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min, 
+                      children: [
+                        Text(
+                          "MOVIE HUB",
+                          textAlign: TextAlign.center, 
+                          style: TextStyle(
+                            color: _textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: screenSize.width * 0.06, 
+                            letterSpacing: 2,
+                            shadows: [
+                              Shadow(
+                                color: _accentColor.withValues(alpha: 0.3),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 2), 
+                        Text(
+                          "Discover • Explore • Enjoy",
+                          textAlign: TextAlign.center, 
+                          style: TextStyle(
+                            color: _secondaryTextColor,
+                            fontSize: screenSize.width * 0.025, 
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8), 
+                      ],
+                    ),
+                  ),
+                  centerTitle: true,
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          _accentColor,
+                          _backgroundColor,
+                        ],
+                        stops: const [0.3, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
       
               // Main Content
               SliverPadding(
@@ -272,52 +353,16 @@ SliverAppBar(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Search Bar
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _accentColor.withValues(alpha: 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: TextField(
-                                controller: _searchController,
-                                focusNode: _searchFocusNode,
-                                style: TextStyle(
-                                  color: _textColor,
-                                  fontSize: 16,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Search movies...',
-                                  hintStyle: TextStyle(
-                                    color: _secondaryTextColor,
-                                  ),
-                                  filled: true,
-                                  fillColor: _inputColor,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.search,
-                                    color: _accentColor,
-                                  ),
-                                  suffixIcon: _searchController.text.isNotEmpty
-                                      ? IconButton(
-                                          icon: Icon(
-                                            Icons.clear,
-                                            color: _secondaryTextColor,
-                                          ),
-                                          onPressed: _clearSearch,
-                                        )
-                                      : null,
-                                ),
-                                onChanged: (value) => setState(() {}),
-                                onSubmitted: (_) => _searchMovies(),
-                              ),
+                            MovieSearchBar(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              isDarkMode: _isDarkMode,
+                              onClear: _clearSearch,
+                              onSearch: (query) {
+                                if (query.isNotEmpty) {
+                                  _searchMovies();
+                                }
+                              },
                             ),
                             const SizedBox(height: 16),
       
@@ -326,9 +371,13 @@ SliverAppBar(
                               width: double.infinity,
                               height: 55,
                               child: ElevatedButton(
-                                onPressed: _searchMovies,
+                                onPressed: connectivityProvider.isConnected 
+                                    ? _searchMovies 
+                                    : _showNoInternetSnackBar,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: _accentColor,
+                                  backgroundColor: connectivityProvider.isConnected
+                                      ? _accentColor
+                                      : Colors.grey,
                                   foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
@@ -385,13 +434,29 @@ SliverAppBar(
                                       runSpacing: 8,
                                       children: [
                                         if (movieProvider.currentYearFilter != "All")
-                                          _buildFilterChip('Year: ${movieProvider.currentYearFilter}', () async {
-                                            await movieProvider.applyFilters(year: 'All');
-                                          }),
+                                          FilterChipWidget(
+                                            label: 'Year: ${movieProvider.currentYearFilter}',
+                                            onDelete: () async {
+                                              if (connectivityProvider.isConnected) {
+                                                await movieProvider.applyFilters(year: 'All');
+                                              } else {
+                                                _showNoInternetSnackBar();
+                                              }
+                                            },
+                                            accentColor: _accentColor,
+                                          ),
                                         if (movieProvider.currentRatingFilter != "All")
-                                          _buildFilterChip('Rating: ${movieProvider.currentRatingFilter}', () async {
-                                            await movieProvider.applyFilters(rating: 'All');
-                                          }),
+                                          FilterChipWidget(
+                                            label: 'Rating: ${movieProvider.currentRatingFilter}',
+                                            onDelete: () async {
+                                              if (connectivityProvider.isConnected) {
+                                                await movieProvider.applyFilters(rating: 'All');
+                                              } else {
+                                                _showNoInternetSnackBar();
+                                              }
+                                            },
+                                            accentColor: _accentColor,
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -495,8 +560,35 @@ SliverAppBar(
                 ),
               ),
       
-              // Movie Grid or States
-              if (movieProvider.isLoading)
+              // Movie Grid or States - Complete with all states
+              if (connectivityProvider.isChecking && !connectivityProvider.initialCheckDone)
+                // Show checking connection state
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: AppColors.primaryRed,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          "Checking connection...",
+                          style: TextStyle(color: _secondaryTextColor, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else if (!connectivityProvider.isConnected && connectivityProvider.initialCheckDone)
+                // Show no internet screen
+                SliverFillRemaining(
+                  child: NoInternetWidget(
+                    onRetry: _retryConnection,
+                  ),
+                )
+              else if (movieProvider.isLoading)
+                // Show loading state
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -510,13 +602,14 @@ SliverAppBar(
                           movieProvider.currentRatingFilter != 'All'
                               ? "Filtering by rating..."
                               : "Searching...",
-                          style: TextStyle(color: _secondaryTextColor),
+                          style: TextStyle(color: _secondaryTextColor, fontSize: 16),
                         ),
                       ],
                     ),
                   ),
                 )
               else if (movieProvider.error.isNotEmpty)
+                // Show error state
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -546,7 +639,9 @@ SliverAppBar(
                         ),
                         const SizedBox(height: 20),
                         ElevatedButton(
-                          onPressed: () => movieProvider.fetchPopularMovies(),
+                          onPressed: connectivityProvider.isConnected
+                              ? () => movieProvider.fetchPopularMovies()
+                              : _retryConnection,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _accentColor,
                             foregroundColor: Colors.white,
@@ -561,6 +656,7 @@ SliverAppBar(
                   ),
                 )
               else if (movieProvider.movies.isNotEmpty)
+                // Show movie grid
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverGrid(
@@ -580,6 +676,7 @@ SliverAppBar(
                   ),
                 )
               else
+                // Show empty state
                 SliverFillRemaining(
                   child: Center(
                     child: Column(
@@ -619,227 +716,14 @@ SliverAppBar(
     );
   }
 
-  Widget _buildFilterChip(String label, VoidCallback onDelete) {
-    return Container(
-      margin: const EdgeInsets.only(right: 5),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _accentColor.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _accentColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: _accentColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onDelete,
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: _accentColor.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.close,
-                color: _accentColor,
-                size: 12,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildMovieCard(Movie movie, MovieProvider provider) {
-    return FutureBuilder<MovieDetail?>(
-      future: provider.getMovieDetail(movie.imdbID),
-      builder: (context, snapshot) {
-        String rating = 'N/A';
-        if (snapshot.hasData && snapshot.data != null && snapshot.data!.imdbRating != 'N/A') {
-          rating = snapshot.data!.imdbRating;
-        }
-        
-        return GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (context, animation, secondaryAnimation) => 
-                    DetailScreen(imdbID: movie.imdbID, year: movie.year,isDarkMode: _isDarkMode,),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  var tween = Tween(begin: const Offset(1, 0), end: Offset.zero);
-                  return SlideTransition(
-                    position: animation.drive(tween),
-                    child: child,
-                  );
-                },
-              ),
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Stack(
-                children: [
-                  // Poster
-                  Positioned.fill(
-                    child: movie.poster != 'N/A'
-                        ? Image.network(
-                            movie.poster,
-                            fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: _cardColor,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    color: _accentColor,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: _cardColor,
-                                child: Icon(
-                                  Icons.broken_image,
-                                  color: _secondaryTextColor,
-                                  size: 40,
-                                ),
-                              );
-                            },
-                          )
-                        : Container(
-                            color: _cardColor,
-                            child: Icon(
-                              Icons.movie,
-                              color: _secondaryTextColor,
-                              size: 40,
-                            ),
-                          ),
-                  ),
-                  
-                  // Gradient Overlay
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.8),
-                          ],
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            movie.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Text(
-                                movie.year,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              if (rating != 'N/A')
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: double.tryParse(rating) != null && double.parse(rating) >= 7.0
-                                        ? Colors.amber
-                                        : Colors.grey,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: Colors.black,
-                                        size: 10,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        rating,
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Loading indicator for rating
-                  if (snapshot.connectionState == ConnectionState.waiting)
-                    const Positioned(
-                      top: 8,
-                      right: 8,
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    return MovieCard(
+      movie: movie,
+      futureDetail: provider.getMovieDetail(movie.imdbID),
+      isDarkMode: _isDarkMode,
+      accentColor: _accentColor,
+      cardColor: _cardColor,
+      secondaryTextColor: _secondaryTextColor,
     );
   }
 }

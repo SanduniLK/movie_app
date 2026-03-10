@@ -6,13 +6,13 @@ import '../utils/colors.dart';
 class DetailScreen extends StatefulWidget {
   final String imdbID;
   final String year;
-  final bool isDarkMode; // Add this parameter
+  final bool isDarkMode; 
 
   const DetailScreen({
     super.key, 
     required this.imdbID, 
     required this.year,
-    required this.isDarkMode, // Required parameter
+    required this.isDarkMode, 
   });
 
   @override
@@ -110,7 +110,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 )
               : CustomScrollView(
                   slivers: [
-                    // App Bar with back button
+                  
                     SliverAppBar(
                       expandedHeight: 350,
                       pinned: true,
@@ -162,7 +162,7 @@ class _DetailScreenState extends State<DetailScreen> {
                                 ),
                               ),
                             
-                            // Gradient overlay
+                            
                             Container(
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(

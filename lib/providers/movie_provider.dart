@@ -6,7 +6,7 @@ import '../services/api_service.dart';
 
 class MovieProvider with ChangeNotifier {
   List<Movie> _movies = [];
-  List<Movie> _allMovies = []; // Original unfiltered movies
+  List<Movie> _allMovies = []; 
   Map<String, MovieDetail> _movieDetails = {};
   bool _isLoading = false;
   String _error = '';
@@ -102,7 +102,7 @@ class MovieProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Update filter values
+      
       if (year != null) _currentYearFilter = year;
       if (rating != null) _currentRatingFilter = rating;
 
@@ -129,7 +129,7 @@ class MovieProvider with ChangeNotifier {
 
       // Apply rating filter
       if (_currentRatingFilter != 'All') {
-        // First, fetch missing movie details
+       
         List<Movie> moviesWithRatings = [];
         
         for (var movie in filteredMovies) {
@@ -137,7 +137,7 @@ class MovieProvider with ChangeNotifier {
             try {
               final detail = await ApiService.fetchMovieDetail(movie.imdbID);
               _movieDetails[movie.imdbID] = detail;
-              await Future.delayed(const Duration(milliseconds: 50)); // Rate limiting
+              await Future.delayed(const Duration(milliseconds: 50)); 
             } catch (e) {
               continue;
             }
@@ -213,7 +213,7 @@ class MovieProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Clear movies
+  // Clear 
   void clearMovies() {
     _movies = [];
     _allMovies = [];
